@@ -1,0 +1,3 @@
+/home/yxg/pcl/pcl/mesh_to_point/build/CMakeFiles/rebuild_cache.dir
+/home/yxg/pcl/pcl/mesh_to_point/build/CMakeFiles/edit_cache.dir
+/home/yxg/pcl/pcl/mesh_to_point/build/CMakeFiles/test.dir

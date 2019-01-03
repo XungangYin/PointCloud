@@ -1,0 +1,73 @@
+#include <iostream>
+#include <string>
+#include <pcl/io/vtk_io.h>
+#include <pcl/io/ply_io.h>
+#include <pcl/point_types.h>
+#include <pcl/registration/icp.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/console/time.h>
+#include <pcl/io/pcd_io.h>
+typedef pcl::PointXYZRGBA PointT;
+typedef pcl::PointCloud<PointT> PointCloudT;
+
+using namespace std;
+
+
+int main (int argc,char **argv)
+{
+         // The point clouds we will be using
+        PointCloudT::Ptr cloud_in (new PointCloudT);  // Original point cloud
+        PointCloudT::Ptr cloud_tr (new PointCloudT);  // Transformed point cloud
+        PointCloudT::Ptr cloud_icp (new PointCloudT);  // ICP output point cloud
+
+        if (argc < 2)
+        {
+                printf ("Usage :\n");
+                printf ("\t\t%s file.ply number_of_ICP_iterations\n", argv[0]);
+                PCL_ERROR ("Provide one ply file.\n");
+                return (-1);
+        }
+
+        int iterations = 1;  // Default number of ICP iterations
+        if (argc > 2)
+        {
+                // If the user passed the number of iteration as an argument
+                iterations = atoi (argv[2]);
+                if (iterations < 1)
+                {
+                        PCL_ERROR ("Number of initial iterations must be >= 1\n");
+                        return (-1);
+                }
+        }
+
+#if 0
+        pcl::PLYReader reader;
+        cout<<"zhen que 0"<<endl;
+        reader.read (argv[1], *cloud_in);
+        cout<<"zhen que 0"<<endl;
+#endif
+        
+        // cout<<"zhen que 0"<<endl;
+        //  pcl::io::loadPLYFile (argv[1], *cloud_in);
+        //pcl::PolygonMesh mesh;
+        // pcl::io::loadPLYFile(argv[1],mesh);
+        
+
+        
+        
+        if (pcl::io::loadPLYFile (argv[1], *cloud_in) < 0)
+        {
+                PCL_ERROR ("Error loading cloud %s.\n", argv[1]);
+                return (-1);
+        }
+        //   std::cout << "\nLoaded file " << argv[1] << " (" << cloud_in->size () << " points) in " << time.toc () << " ms\n" << std::endl;
+        
+        cout<<"zhen que 1"<<endl;
+        
+        //    pcl::io::savePCDFileASCII("new.pcd",*cloud_in);
+
+// pcl::io::saveVTKFile("mesh_mc.vtk",mesh);
+        //   pcl::io::savePCDFile("new.pcd",*cloud_in);
+        
+        return 0;
+}

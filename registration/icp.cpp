@@ -1,0 +1,227 @@
+#include <iostream>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/registration/icp.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/visualization/impl/pcl_visualizer.hpp>
+
+
+#include <boost/thread/thread.hpp>
+#include <pcl/console/parse.h>  //pcl控制台解析
+#include <pcl/console/time.h>   // TicToc
+#include <string>
+
+#include <pcl/correspondence.h>
+#include <pcl/registration/correspondence_estimation.h>
+
+using namespace std;
+pcl::PointCloud<pcl::PointXYZ>::Ptr iterative (pcl::PointCloud<pcl::PointXYZ>::Ptr sources,pcl::PointCloud<pcl::PointXYZ>::Ptr target, float score, int i);
+
+bool next_iteration = false;
+
+void printMatrix(const Eigen::Matrix4d &matrix)  //打印预估的矩阵
+{
+        printf("rotation matrix:\n");
+        printf ("Rotation matrix :\n");
+        printf ("    | %6.3f %6.3f %6.3f | \n", matrix (0, 0), matrix (0, 1), matrix (0, 2));
+        printf ("R = | %6.3f %6.3f %6.3f | \n", matrix (1, 0), matrix (1, 1), matrix (1, 2));
+        printf ("    | %6.3f %6.3f %6.3f | \n", matrix (2, 0), matrix (2, 1), matrix (2, 2));
+        printf ("Translation vector :\n");
+        printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0, 3), matrix (1, 3), matrix (2, 3));
+}
+
+
+//设置键盘交互函数
+void keyboardEvent(const pcl::visualization::KeyboardEvent &event,void *nothing)
+{
+        if(event.getKeySym() == "space" && event.keyDown())
+                next_iteration = true;
+}
+
+
+int
+ main (int argc, char** argv)
+{
+        vector<int> filename;   //存储输入地址
+        filename = pcl::console::parse_file_extension_argument(argc,argv,".pcd");  //查找命令行中的输入的pcd文件(解析控制台参数，并保存为vector类型)
+        if(filename.size()!=2)    //限定输入为两个文件
+        {
+                cout << "input pcd file format wrong" <<endl;
+                return -1;
+        }
+        
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in (new pcl::PointCloud<pcl::PointXYZ>);  //输入源点云
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_target (new pcl::PointCloud<pcl::PointXYZ>);//输入目标点云
+        pcl::PointCloud<pcl::PointXYZ>::Ptr Final(new pcl::PointCloud<pcl::PointXYZ>); //存储经过配准变换后源点云
+        if(pcl::io::loadPCDFile<pcl::PointXYZ>(argv[filename[0]],*cloud_in)<0){
+                cout <<"Error load pcd file "<<argv[filename[0]]<<endl;
+                return -1;
+        }
+        if(pcl::io::loadPCDFile(argv[filename[1]],*cloud_target)<0){
+                cout<<"error load pcd file"<<endl;
+                return -1;
+        }
+        /*
+        pcl::io::loadPCDFile<pcl::PointXYZ>("mid.pcd",*cloud_in);
+        pcl::io::loadPCDFile<pcl::PointXYZ>("right-one.pcd",*cloud_target);
+        */
+        cout <<"cloud_in size "<< cloud_in->size()<<endl;
+        cout << "cloud_target size" << cloud_target->size()<<endl;
+        cout << "cloud_target size" << (*cloud_target).size()<<endl;  //小括号的参数表示引用
+
+//对原始点云进行坐标变化，把变换后的点当作目标点（在这里用不到）
+/*
+        double theta = M_PI/8;
+        transformation_matrix (0,0) = cos(theta);
+        transformation_matrix (0,1) = -sin(theta);
+        transformation_matrix (1,0) = sin(theta);
+        transformation_matrix (1,1) =  cos(theta);
+        transformation_matrix (2,3) = 0.4;    //z轴平移0.4
+        cout <<"applying this rigid transformation to cloud_in:"<<endl;
+        pcl::transformPointCloud (*cloud_in,*Final,transformation_matrix);   //变换点云，根据矩阵
+        
+        */
+
+        //  pcl::io::savePCDFile("f.pcd",*cloud_in); 
+
+        pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;    
+        *Final = *cloud_in;    //对后边可视化而言，很重要
+        icp.setInputSource(Final);
+        icp.setInputTarget(cloud_target);
+        
+        icp.setMaxCorrespondenceDistance(0.8);  //感觉对结果影响挺大的，设置的是对应点之间的最大距离
+        icp.setTransformationEpsilon(1e-10); //收敛条件（前一个变换矩阵和当前变换矩阵的差值，小于某数）
+        icp.setEuclideanFitnessEpsilon(0.0001); //前后两次迭代误差的差值
+        // icp.setMaximumIterations(100); //设置最大迭代次数
+        icp.setMaximumIterations(1);  //设置每次空格间按下的最大迭代次数
+        /* .. epsilon 希腊第五个字母，表示误差..*/
+        
+       
+
+        //icp.align(*Final); //对齐。配准计算
+        /*
+        std::cout << "has converged:" << icp.hasConverged() << " score: " <<  //converge 融合。 创建一个pcl::PointCloud实例Final对象，存储配准变换后的源点云，应用ICP算法后，IterativeClosestPoint能够保存结果点云集，如果这两个点云匹配正确的话（也就是说仅仅对其中一个应用某种刚体变换，就可以得到两个在同一坐标系下相同的点云），那么icp.hasConverged() = 1 (true)，然后会输出最终变换矩阵的适合性评估和一些相关的信息。
+                icp.getFitnessScore() << std::endl; //fitness 恰当的,getFitnessscore的结果一般在小数点三位后，此值越小，表示配准精度越高
+        std::cout << icp.getFinalTransformation() << std::endl;//输出的是变换矩阵
+        cout<<"final size is "<< Final.width<<endl;
+        pcl::io::savePCDFileASCII("test.pcd",Final);  
+        */
+        /*  //自己画蛇填足写的一个递归函数
+        pcl::PointCloud<pcl::PointXYZ>::Ptr registration = iterative(cloud_in,cloud_target,115.891,1);
+        pcl::io::savePCDFileASCII("icp.pcd",*registration); */
+
+        /*
+        pcl::registration::CorrespondenceEstimation<pcl::PointXYZ,pcl::PointXYZ> correspond_est;   //定义对应点对的估计函数
+        correspond_est.setInputSource(cloud_in);
+        correspond_est.setInputTarget(cloud_target);
+        pcl::Correspondences all_correspondences; //定义一个结构，存储对应点对索引
+        correspond_est.determineCorrespondences(all_correspondences);   //计算两点云之间的对应关系
+//correspond_est.determineReciprocalCorrespondences (all_correspondences);  //确定两点云之间的相互对应关系
+        cout <<"corresponds size is:"<<all_correspondences.size()<<endl;
+        
+        cout<< all_correspondences.at(0).index_query<<endl; //sources中点的索引
+        cout<<cloud_in->points[all_correspondences.at(1000).index_query].x<<endl; //值 
+        cout<< all_correspondences.at(0).index_match<<endl; //target中的索引
+        cout<<"the first distance is:"<<all_correspondences.at(0).distance<<endl;
+        
+        */
+        
+        
+        
+        
+        boost::shared_ptr<pcl::visualization::PCLVisualizer> view (new pcl::visualization::PCLVisualizer("icp test"));
+        int v1 ; //定义两个窗口
+        int v2 ;
+        view->createViewPort(0.0,0.0,0.5,1.0,v1);  //四个参数分别是x_min,y_min,x_max.y_max.
+        view->createViewPort(0.5,0.0,1.0,1.0,v2);
+
+        // view->addCorrespondences<pcl::PointXYZ>(cloud_in,cloud_target,all_correspondences,"correspond",v1);  //之前一直不行，是因为没有添加<pcl::PointXYZ>.  这主要是显示对应点的连线
+        //   view->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH,2,"correspond");  //设置对应点连心的粗细
+        //   view->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR,0,0,1,"correspond"); //设置对应点连心的颜色，范围从0-1之间
+        
+        
+        
+        pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> sources_cloud_color(cloud_in,250,0,0); //设置源点云的颜色
+
+        view->addPointCloud(cloud_in,sources_cloud_color,"sources_cloud_v1",v1);
+        pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> target_cloud_color (cloud_target,0,250,0);
+        view->addPointCloud(cloud_target,target_cloud_color,"target_cloud_v1",v1);
+        view->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,3,"sources_cloud_v1");
+        view->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY,1,"sources_cloud_v1");  //设置该点云的不透明度，当为0时，表示透明度为1（完全透明的）.
+         
+        
+        view->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,3,"target_cloud_v1");
+        
+        pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ>aligend_cloud_color(Final,255,255,255);
+        view->addPointCloud(Final,aligend_cloud_color,"aligend_cloud_v2",v2);
+        view->addPointCloud(cloud_target,target_cloud_color,"target_cloud_v2",v2);
+        
+        view->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,2,"aligend_cloud_v2");
+        view->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,2,"target_cloud_v2");
+        
+        view->registerKeyboardCallback(&keyboardEvent,(void*)NULL);  //设置键盘回吊函数
+        int iterations = 0; //迭代次数
+        while(!view->wasStopped())
+        {
+                view->spinOnce();  //运行视图
+                if (next_iteration)
+                {
+                        icp.align(*Final);  //icp计算
+                        cout <<"has conveged:"<<icp.hasConverged()<<"\nscore:"<<icp.getFitnessScore()<<endl;
+                        cout<<"matrix:\n"<<icp.getFinalTransformation()<<endl;
+                        cout<<"iteration = "<<++iterations;
+                        
+                        if (iterations == 1000)
+                                return 0;
+                        view->updatePointCloud(Final,aligend_cloud_color,"aligend_cloud_v2");
+                        
+                 }
+                next_iteration = false;  //本次迭代结束，等待触发
+                pcl::io::savePCDFile("final.pcd",*Final);    
+        }
+
+        //pcl::io::savePCDFile("final.pcd",*Final);
+        /*
+          view->setBackgroundColor(0,0,0);
+          view->addPointCloud<pcl::PointXYZ>(registration);
+          view->addCoordinateSystem(1.0);
+          view->initCameraParameters();
+        while(!view->wasStopped())
+        {
+                view->spinOnce(100);
+                boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+                }
+        */
+        
+        
+        
+        return (0);
+        
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr iterative (pcl::PointCloud<pcl::PointXYZ>::Ptr sources,pcl::PointCloud<pcl::PointXYZ>::Ptr target,float score,int i)
+{
+        pcl::PointCloud<pcl::PointXYZ>::Ptr final (new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::IterativeClosestPoint<pcl::PointXYZ,pcl::PointXYZ> icp;
+        icp.setInputSource(sources);
+        icp.setInputTarget(target);
+        icp.align(*final);
+
+        float accuracy = icp.getFitnessScore();
+        if ( score < accuracy)
+        {
+                i++;
+                cout<<"has conveged:" <<icp.hasConverged()<<endl;
+                cout<<"i is:"<<i<<"\n"<<"score is: "<<icp.getFitnessScore()<<endl;
+                iterative(final,target,score,i);
+                
+        } else {
+                i =i-1;
+                cout <<"i is....."<<i<<endl;
+                cout <<"has converge :"<<icp.hasConverged()<<endl;
+                cout<<"transformation matrix is:\n"<<icp.getFinalTransformation()<<endl;
+                cout <<"score is:  "<<icp.getFitnessScore()<<endl;
+                return final;
+        }
+}

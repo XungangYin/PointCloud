@@ -1,0 +1,3 @@
+/home/yxg/pcl/pcl/rgb_to_xyz/build/CMakeFiles/edit_cache.dir
+/home/yxg/pcl/pcl/rgb_to_xyz/build/CMakeFiles/rebuild_cache.dir
+/home/yxg/pcl/pcl/rgb_to_xyz/build/CMakeFiles/test.dir

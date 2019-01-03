@@ -1,0 +1,93 @@
+#!/usr/bin/python
+import sys
+
+def input_stl_file (filename):
+    stlmodel = []
+    vertices = []
+    vertices_hash = {}
+    faces = []
+    vid = 0
+    
+    a_file = open (filename,'r')
+    
+    for a_line in a_file:
+        text_list = a_line.split ()
+        if len (text_list) == 4:
+            v = [float (e) for e in text_list[1:]]
+            id = tuple (v)
+            if id not in vertices_hash:
+                vertices.append (v)
+                vertices_hash[tuple (v)] = vid
+                vid = vid + 1
+    a_file.close ()
+    
+    a_file = open (filename,'r')
+    (is_vertex, is_face, is_collected) = (False, False, False)
+    f = []
+    for a_line in a_file:
+        text_list = a_line.split ()
+        if len (text_list) == 4:
+            is_vertex = True
+        else:
+            is_vertex = False
+        if text_list[0] == 'facet':
+            is_face = True
+        elif text_list[0] == 'endfacet':
+            is_face = False
+        if text_list[0] == 'endloop':
+            is_collected = True
+        else:
+            is_collected = False
+            
+        if is_face:
+            if is_vertex:
+                v = [float (e) for e in text_list[1:]]
+                f.append (vertices_hash[tuple (v)])
+            if is_collected:
+                faces.append (f)
+                f = []
+    a_file.close ()
+    
+    stlmodel.append (vertices)
+    stlmodel.append (faces)
+    
+    return stlmodel
+
+def output_xml (stlmodel):
+    print ('''<?xml version="1.0"?>
+<!DOCTYPE polyhds [<!ELEMENT polyhds (polyhd+)>
+    <!ELEMENT polyhd (vertices, faces)>
+    <!ELEMENT vertices (v)+>
+    <!ELEMENT v (x, y, z)>
+    <!ATTLIST v id CDATA #REQUIRED>
+    <!ELEMENT x (#PCDATA)>
+    <!ELEMENT y (#PCDATA)>
+    <!ELEMENT z (#PCDATA)>
+    <!ELEMENT faces (face)+>
+
+    <!ELEMENT face (vid)+>
+    <!ELEMENT vid (#PCDATA)>
+]>''')
+    
+    print ("<polyhds>")
+    print ("<polyhd>")
+    print ("<vertices>")
+    i = 1
+    for v in stlmodel[0]:
+        print ("<v id=\"{0}\"><x>{1}</x><y>{2}</y><z>{3}</z></v>".format (i, v[0], v[1], v[2]))
+        i = i + 1
+    print ("</vertices>")
+    print ("<faces>")
+    for f in stlmodel[1]:
+        print ("<face>")
+        s = ''
+        for id in f:
+            s = s + "<vid>{0}</vid>".format (id + 1)
+        print (s)
+        print ("</face>")
+    print ("</faces>")
+    print ("</polyhd>")
+    print ("</polyhds>")
+                    
+if __name__ == '__main__':
+    output_xml (input_stl_file (sys.argv[1]))

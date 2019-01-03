@@ -1,0 +1,3 @@
+/home/yxg/pcl/pcl/sift/build/CMakeFiles/edit_cache.dir
+/home/yxg/pcl/pcl/sift/build/CMakeFiles/rebuild_cache.dir
+/home/yxg/pcl/pcl/sift/build/CMakeFiles/test.dir

@@ -1,0 +1,3 @@
+/home/yxg/pcl/pcl/greedsurface/build/CMakeFiles/edit_cache.dir
+/home/yxg/pcl/pcl/greedsurface/build/CMakeFiles/rebuild_cache.dir
+/home/yxg/pcl/pcl/greedsurface/build/CMakeFiles/test.dir

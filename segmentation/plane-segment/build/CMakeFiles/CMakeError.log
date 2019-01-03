@@ -1,0 +1,51 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/yxg/pcl/pcl/segmentation/plane-segment/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/gmake" "cmTC_a8d0c/fast"
+/usr/bin/gmake -f CMakeFiles/cmTC_a8d0c.dir/build.make CMakeFiles/cmTC_a8d0c.dir/build
+gmake[1]: Entering directory '/home/yxg/pcl/pcl/segmentation/plane-segment/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_a8d0c.dir/CheckSymbolExists.c.o
+/usr/bin/cc     -o CMakeFiles/cmTC_a8d0c.dir/CheckSymbolExists.c.o   -c /home/yxg/pcl/pcl/segmentation/plane-segment/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTC_a8d0c
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a8d0c.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTC_a8d0c.dir/CheckSymbolExists.c.o  -o cmTC_a8d0c -rdynamic 
+CMakeFiles/cmTC_a8d0c.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+gmake[1]: *** [CMakeFiles/cmTC_a8d0c.dir/build.make:98: cmTC_a8d0c] Error 1
+gmake[1]: Leaving directory '/home/yxg/pcl/pcl/segmentation/plane-segment/build/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:126: cmTC_a8d0c/fast] Error 2
+
+File /home/yxg/pcl/pcl/segmentation/plane-segment/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/yxg/pcl/pcl/segmentation/plane-segment/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/gmake" "cmTC_b305b/fast"
+/usr/bin/gmake -f CMakeFiles/cmTC_b305b.dir/build.make CMakeFiles/cmTC_b305b.dir/build
+gmake[1]: Entering directory '/home/yxg/pcl/pcl/segmentation/plane-segment/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_b305b.dir/CheckFunctionExists.c.o
+/usr/bin/cc    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_b305b.dir/CheckFunctionExists.c.o   -c /usr/share/cmake/Modules/CheckFunctionExists.c
+Linking C executable cmTC_b305b
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b305b.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_b305b.dir/CheckFunctionExists.c.o  -o cmTC_b305b -rdynamic -lpthreads 
+/usr/lib/gcc/x86_64-pc-linux-gnu/5.3.0/../../../../x86_64-pc-linux-gnu/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+gmake[1]: *** [CMakeFiles/cmTC_b305b.dir/build.make:98: cmTC_b305b] Error 1
+gmake[1]: Leaving directory '/home/yxg/pcl/pcl/segmentation/plane-segment/build/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:126: cmTC_b305b/fast] Error 2
+
+

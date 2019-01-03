@@ -1,0 +1,61 @@
+/*
+  利用欧式聚类算法，将点云分类，并分别存贮在文件中
+ */
+#include <pcl/ModelCoefficients.h>
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
+
+using namespace std;
+
+int main(int argc,char **argv)
+{
+        pcl::PCDReader reader;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        reader.read("/home/yxg/pcl/pcd/mid.pcd",*cloud);
+        
+        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+        tree->setInputCloud(cloud);
+        cout<<"cloud size is:  "<<cloud->size()<<endl;
+        
+        /*....创建聚类分割....*/
+        vector<pcl::PointIndices> cluster_indices;
+        pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+        ec.setClusterTolerance(0.3); //搜索近邻半径
+        ec.setMinClusterSize(1); //设置一个聚类最少点的数目
+        ec.setMaxClusterSize(3000); //一个聚类最大点的数目
+        ec.setSearchMethod(tree);
+        ec.setInputCloud(cloud);
+        ec.extract(cluster_indices); //从点云中提取聚类，并将点云索引号保存在cluster_indices中
+
+        cout << "cluster size is:  "<<cluster_indices.size()<<endl;
+
+        pcl::PCDWriter writer;
+        int j= 0 ;
+        for (vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin();it != cluster_indices.end();++it)
+        {
+                pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZ>);
+
+                for (vector<int>::const_iterator pit = it->indices.begin();pit != it->indices.end();++pit)
+                        cloud_cluster->points.push_back(cloud->points[*pit]);
+                cloud_cluster->width = cloud_cluster->points.size ();
+                cloud_cluster->height = 1;
+                cloud_cluster->is_dense = true;
+                cout<<"clusters size is :  "<<cloud_cluster->size()<<endl;
+
+                stringstream ss;
+                ss<<"cloud_cluster_"<<j<<".pcd";
+                writer.write<pcl::PointXYZ>(ss.str(),*cloud_cluster,false);
+                j++;
+                
+        }
+        return 0;
+        
+}

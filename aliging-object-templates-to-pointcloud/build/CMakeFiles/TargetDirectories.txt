@@ -1,0 +1,1 @@
+/home/yxg/pcl/aliging-object-templates-to-pointcloud/build/CMakeFiles/test.dir

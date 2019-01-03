@@ -1,0 +1,47 @@
+#include <pcl/range_image/range_image.h> //深度图像头文件
+#include <pcl/visualization/range_image_visualizer.h>
+using namespace std;
+int main(int argc,char **argv)
+{
+        pcl::PointCloud<pcl::PointXYZ> pointcloud;
+
+        //create data
+        for (float y = -0.5;y < 0.5;y+=0.01){
+                for (float z =-0.5;z < 0.5; z += 0.01){
+                        pcl::PointXYZ point;
+                        point.x = 2.0- y;
+                        point.y = y;
+                        point.z = z;
+                        pointcloud.push_back(point);
+                }
+        }
+        pointcloud.width = (uint32_t)pointcloud.points.size();
+        pointcloud.height = 1;  //设置为无序点云
+
+        //创建深度图像
+        float angularResulation = (float)(1.0f * (M_PI/180.0));
+        float maxAnglewWidth = (float) (360.0 * (M_PI/180.0));
+        float maxAngleHeight = float (180.0 * (M_PI/180.0));
+
+        Eigen::Affine3f sensorPose = (Eigen::Affine3f)Eigen::Translation3f(0,0,0);
+        pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
+        float noiseLevel = 0.00;
+        float minRange = 0.0;
+        int borderSize = 1;
+
+        pcl::RangeImage rangeImage;
+        rangeImage.createFromPointCloud(pointcloud,angularResulation,maxAnglewWidth,maxAngleHeight,sensorPose,coordinate_frame,noiseLevel,minRange,borderSize);
+
+        cout <<rangeImage<<"\n";
+
+        //visuzlize the range image
+        pcl::visualization::RangeImageVisualizer viewer ("range image");
+        viewer.showRangeImage(rangeImage);
+        while(!viewer.wasStopped())
+        {
+                viewer.spinOnce();
+                pcl_sleep(0.1);   //100ms to go easy on cpu
+        }
+        
+        return 0;
+}

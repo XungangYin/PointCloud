@@ -1,0 +1,22 @@
+#include <iostream>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/extract_indices.h>
+#include <vector>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/visualization/pcl_visualizer.h>
+int main(int argc, char** argv)
+{
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in (new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::io::loadPCDFile(argv[1],*cloud_in);
+        
+        
+
+
+        return 0;
+}

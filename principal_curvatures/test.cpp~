@@ -1,0 +1,66 @@
+#include <iostream>
+#include <vector>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/principal_curvatures.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/common/common_headers.h>
+#include <boost/thread/thread.hpp>
+
+using namespace std;
+
+int main()
+{
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::io::loadPCDFile<pcl::PointXYZ>("/home/yxg/pcl/pcd/mid.pcd",*cloud);
+        // pcl::io::loadPCDFile<pcl::PointXYZ>("/home/yxg/pcl/pcd/fandisk.pcd",*cloud);
+        //   pcl::io::loadPCDFile<pcl::PointXYZ>("/home/yxg/pcl/pcd/yelun.pcd",*cloud);
+        cout <<"cloud size is:"<<cloud->size()<<endl;
+
+        pcl::NormalEstimation<pcl::PointXYZ,pcl::Normal> normal_estimation;
+        normal_estimation.setInputCloud(cloud);
+        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+        normal_estimation.setSearchMethod(tree);
+        pcl::PointCloud<pcl::Normal>::Ptr cloud_normal (new pcl::PointCloud<pcl::Normal>);
+        normal_estimation.setKSearch(8);
+        normal_estimation.compute(*cloud_normal);
+
+        cout<<"normal is:"<<cloud_normal->points[1].normal_x<<endl;
+        cout<<"normal is:"<<cloud_normal->points[1].normal_y<<endl;
+        cout<<"normal is:"<<cloud_normal->points[1].normal_z<<endl;
+
+//创建主区率估计对象
+        pcl::PrincipalCurvaturesEstimation<pcl::PointXYZ,pcl::Normal,pcl::PrincipalCurvatures> principal_curvatures_estimation;
+        principal_curvatures_estimation.setInputCloud(cloud);
+        principal_curvatures_estimation.setInputNormals(cloud_normal);
+        principal_curvatures_estimation.setSearchMethod(tree);
+        principal_curvatures_estimation.setKSearch(8);
+
+        pcl::PointCloud<pcl::PrincipalCurvatures>::Ptr principal_curvatures (new pcl::PointCloud<pcl::PrincipalCurvatures>());  //创建存储主曲率的指针
+        principal_curvatures_estimation.compute(*principal_curvatures);
+
+        pcl::PrincipalCurvatures descib = principal_curvatures->points[1];  //float pc1和float pc2分别代表两个主曲率的值，float principal_curvature_x、principal_curvature_y、principal_curvature_z代表一个主方向的三个分量。假设是对的
+        cout<<descib<<endl;
+
+
+
+        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D test"));
+        viewer->setBackgroundColor(0,0,0);
+        pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> v(cloud,250,252,250);
+
+        //   viewer->addPointCloud<pcl::PointXYZ>(cloud,v,"cloud");
+        
+        viewer->addPointCloudPrincipalCurvatures(cloud,cloud_normal,principal_curvatures,5,100,"cloud1");
+        viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,10,"cloud1");
+
+        viewer->addCoordinateSystem(1.0); //建立空间直角坐标系
+        viewer->initCameraParameters();
+        while(!viewer->wasStopped())
+        {
+                viewer->spinOnce(100);
+                boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+        }
+
+}

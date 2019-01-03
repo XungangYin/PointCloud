@@ -1,0 +1,3 @@
+#include <pcl/point_cloud_h>
+#include <pcl/point_types.h>
+#include <pcl/io/openni_grabber.h>

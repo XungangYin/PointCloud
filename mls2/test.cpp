@@ -1,0 +1,75 @@
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/surface/mls.h>
+#include <pcl/console/time.h>
+#include <pcl/point_cloud.h>
+#include <pcl/io/vtk_io.h>
+#include <pcl/surface/poisson.h>
+using namespace pcl;
+using namespace std;
+
+typedef pcl::PointXYZ Point;
+//typedef pcl::PointCloud<Point> PointCloud;
+
+int main(int argc,char **argv)
+{
+        PointCloud<Point>::Ptr cloud (new PointCloud<Point> ());
+        if(io::loadPCDFile (argv[1],*cloud) == -1)
+        {
+                cout<<"读入数据失败"<<endl;
+                return -1;
+        }
+
+        //MLS预处理数据，平滑。 1
+        MovingLeastSquares<Point,Point> mls;
+        mls.setInputCloud(cloud);
+        mls.setSearchRadius(5.01);//确定搜索半径，可以理解为紧支撑域
+        // mls.setKSearch(15);
+        mls.setPolynomialFit(true); //设置对于法线的估计仅仅依靠切线还是多项式
+        mls.setPolynomialOrder(2);
+
+        mls.setUpsamplingMethod(MovingLeastSquares<Point,Point>::SAMPLE_LOCAL_PLANE);
+        mls.setUpsamplingRadius(0.005); //划分点云增长的区域。把整个点云划分为此半径的子点云，然后一一索引增长。
+        mls.setUpsamplingStepSize(0.003); //对每个子点云迭代处理的步长。
+
+        PointCloud<Point>::Ptr cloud_smoothed (new PointCloud<Point>);
+        mls.process( *cloud_smoothed);
+//1
+
+        //法向计算
+        NormalEstimationOMP<Point,Normal> ne;
+        ne.setNumberOfThreads(8);
+        ne.setInputCloud(cloud_smoothed);
+        // ne.setRadiusSearch(0.01);
+        ne.setKSearch(15);
+        Eigen::Vector4f centroid;  //质心
+        compute3DCentroid(*cloud_smoothed,centroid); //估计质心的坐标
+        ne.setViewPoint(centroid[0],centroid[1],centroid[2]); //??
+
+        PointCloud<Normal>::Ptr cloud_normals (new PointCloud<Normal>());
+        ne.compute(*cloud_normals);
+
+        for(size_t i = 0; i < cloud_normals->size();i++)
+        {
+                cloud_normals->points[i].normal_x *= -1;
+                cloud_normals->points[i].normal_y *= -1;
+                cloud_normals->points[i].normal_z *= -1;      
+        }
+        
+        
+        //链接字段
+        PointCloud<PointNormal>::Ptr cloud_smoothed_normals (new PointCloud<PointNormal> ());
+        concatenateFields(*cloud_smoothed,*cloud_normals,*cloud_smoothed_normals);
+        Poisson<PointNormal> poission;
+        poission.setDepth(9); //八差树深度
+        poission.setInputCloud(cloud_smoothed_normals);
+        PolygonMesh mesh;
+        poission.reconstruct(mesh);
+        
+        io::saveVTKFile("result.vtk",mesh);
+
+
+        return 0;
+}

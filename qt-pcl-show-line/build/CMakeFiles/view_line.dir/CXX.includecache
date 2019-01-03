@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/yxg/pcl/qt-pcl-show-line/main.cpp
+iostream
+-
+pcl/io/pcd_io.h
+-
+boost/shared_ptr.hpp
+-
+pcl/visualization/pcl_visualizer.cpp
+-
+pcl/point_types.h
+-
+

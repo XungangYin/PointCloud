@@ -1,0 +1,3 @@
+/home/yxg/PCL/pcl/b-spline/build/CMakeFiles/edit_cache.dir
+/home/yxg/PCL/pcl/b-spline/build/CMakeFiles/rebuild_cache.dir
+/home/yxg/PCL/pcl/b-spline/build/CMakeFiles/test.dir
